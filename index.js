@@ -1,6 +1,6 @@
-const express = require('express');
+const express = require("express");
 const app = express();
-const cors = require('cors');
+const cors = require("cors");
 require("dotenv").config();
 const port = process.env.PORT || 5000;
 
@@ -8,10 +8,7 @@ const port = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json());
 
-
-
-
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.zffmq.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
@@ -29,15 +26,55 @@ async function run() {
     await client.connect();
 
     // Get the database and collection on which to run the operation
-      const menuCollection = client.db("FoodCourtDB").collection("menu");
-      
-      app.get('/menu', async (req, res) => {
-          const result = await menuCollection.find().toArray();
-          res.send(result)
-      })
+    const userCollection = client.db("FoodCourtDB").collection("users");
 
-      
-      
+    const menuCollection = client.db("FoodCourtDB").collection("menu");
+
+    const reviewCollection = client.db("FoodCourtDB").collection("reviews");
+
+    const cartCollection = client.db("FoodCourtDB").collection("carts");
+
+    //Users related api
+
+    app.post("/users", async (req, res) => {
+      const user = req.body;
+      const result = await userCollection.insertOne(user);
+      res.send(result);
+    });
+
+    //Menu Collection
+    app.get("/menu", async (req, res) => {
+      const result = await menuCollection.find().toArray();
+      res.send(result);
+    });
+
+    //Review Collection
+    app.get("/reviews", async (req, res) => {
+      const result = await reviewCollection.find().toArray();
+      res.send(result);
+    });
+
+    //   Carts collection
+    app.get("/carts", async (req, res) => {
+      const email = req.query.email;
+      const query = { email: email };
+      const result = await cartCollection.find(query).toArray();
+      res.send(result);
+    });
+
+    app.post("/carts", async (req, res) => {
+      const cartItem = req.body;
+      const result = await cartCollection.insertOne(cartItem);
+      res.send(result);
+    });
+
+    app.delete("/carts/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await cartCollection.deleteOne(query);
+      res.send(result);
+    });
+
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log(
@@ -50,12 +87,10 @@ async function run() {
 }
 run().catch(console.dir);
 
-
-app.get('/', (req, res) => { 
-    res.send('boss is active')
-})
+app.get("/", (req, res) => {
+  res.send("boss is active");
+});
 
 app.listen(port, () => {
-    console.log(`Food Court is working on port ${port}`);
-})
-
+  console.log(`Food Court is working on port ${port}`);
+});
